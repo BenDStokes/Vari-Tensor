@@ -114,12 +114,36 @@ struct LinearInversion final : TestSet::Test
     }
 };
 
+struct TripleAdd final: TestSet::Test {
+    explicit TripleAdd(): Test("Ai + Bi + Ci") {}
+    bool run_test() override {
+        // given
+        const Index i{LATIN};
+
+        Tensor a{i}, b {i}, c{i};
+
+        a[0] =  1; b[0] = -1; c[0] =  3;
+        a[1] =  2; b[1] =  4; c[1] =  2;
+        a[2] = -3; b[2] = -1; c[2] = -1;
+
+        Tensor expected{i};
+        expected[0] = 3; expected[1] = 8; expected[2] = -5;
+
+        // when
+        const Tensor result = a[i] + b[i] + c[i];
+
+        return result == expected;
+    }
+};
+
 
 struct TestLinearOperations final : TestSet {
     explicit TestLinearOperations() : TestSet("Test Linear Operations") {
         add_sub_test(std::make_unique<DisagreementThrows>());
         add_sub_test(std::make_unique<VectorAddition>());
         add_sub_test(std::make_unique<VectorSubtraction>());
+        add_sub_test(std::make_unique<LinearInversion>());
+        add_sub_test(std::make_unique<TripleAdd>());
     }
 };
 

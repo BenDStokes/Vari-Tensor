@@ -46,7 +46,7 @@ struct AllStatic final: TestSet::Test {
 
     bool run_test() override {
         const Index mu{GREEK}, nu{GREEK};
-        const Tensor T{mu, nu};
+        Tensor T{mu, nu};
         std::ranges::iota(T, 0);
 
         const auto result = T[2, 3];
@@ -213,7 +213,7 @@ struct ScalarShortCircuit final: TestSet::Test {
     explicit ScalarShortCircuit(): Test("Scalar Short Circuit") {}
 
     bool run_test() override {
-        const auto T = Tensor{2};
+        auto T = Tensor{2};
         const auto result = T[];
 
         return result == 2;
@@ -272,7 +272,7 @@ struct MultipleIntervals final: TestSet::Test {
         const Tensor T{mu, nu};
         std::ranges::iota(T, 0);
 
-        const Tensor expected{i, j};
+        Tensor expected{i, j};
         expected[0, 0] = 11;
         expected[1, 0] = 12;
         expected[2, 0] = 13;

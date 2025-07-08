@@ -182,12 +182,13 @@ inline void SummedOp::add_element(const Tensor& tensor, Operation) {
     m_sub_expressions.emplace_back(View{tensor});
 }
 
-inline void SummedOp::add_element(const LinkedOp& summation, Operation) {
-    m_sub_expressions.emplace_back(summation);
+inline void SummedOp::add_element(const LinkedOp& linked_op, Operation) {
+    m_sub_expressions.emplace_back(linked_op);
 }
 
-inline void SummedOp::add_element(const SummedOp& product, Operation) {
-    m_sub_expressions.emplace_back(product);
+inline void SummedOp::add_element(const SummedOp& summed_op, Operation) {
+    m_modifier *= summed_op.m_modifier;
+    for (auto& expression: summed_op.m_sub_expressions) m_sub_expressions.emplace_back(expression);
 }
 
 inline void SummedOp::add_element(const View& view, Operation) {

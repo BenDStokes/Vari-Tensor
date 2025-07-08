@@ -89,8 +89,8 @@ private:
     Expressions m_sub_expressions;
 
     void add_element(const Tensor& tensor, Operation);
-    void add_element(const LinkedOp& summation, Operation);
-    void add_element(const SummedOp& product, Operation);
+    void add_element(const LinkedOp& linked_op, Operation);
+    void add_element(const SummedOp& summed_op, Operation);
     void add_element(const View& view, Operation);
     void add_element(const double& value, Operation operation);
 };

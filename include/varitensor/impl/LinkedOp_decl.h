@@ -74,8 +74,8 @@ private:
     std::vector<Operation> m_signs;
 
     void add_element(const Tensor& tensor, Operation sign);
-    void add_element(const LinkedOp& summation, Operation sign);
-    void add_element(const SummedOp& product, Operation sign);
+    void add_element(const LinkedOp& linked_op, Operation sign);
+    void add_element(const SummedOp& summed_op, Operation sign);
     void add_element(const View& view, Operation sign);
     void add_element(double value, Operation sign);
 };

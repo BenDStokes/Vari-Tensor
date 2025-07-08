@@ -152,6 +152,28 @@ struct DivThrows final: TestSet::Test {
     }
 };
 
+struct MultiplyDot final: TestSet::Test {
+    explicit MultiplyDot(): Test("Ai (Bj . Cj)") {}
+    bool run_test() override {
+        // given
+        const Index i{LATIN}, j{LATIN};
+
+        Tensor a{i}, b {i}, c{i};
+
+        a[0] =  1; b[0] = -1; c[0] =  3;
+        a[1] =  2; b[1] =  4; c[1] =  2;
+        a[2] = -3; b[2] = -1; c[2] = -1;
+
+        Tensor expected{i};
+        expected[0] = 6; expected[1] = 12; expected[2] = -18;
+
+        // when
+        Tensor result = a[i] * (b[j] * c[j]);
+
+        return result == expected;
+    }
+};
+
 } // namespace tm_tests
 
 struct TestTensorMultiplication final: TestSet {
@@ -161,6 +183,7 @@ struct TestTensorMultiplication final: TestSet {
         add_sub_test(std::make_unique<tm_tests::SingleRepeated>());
         add_sub_test(std::make_unique<tm_tests::Mixed>());
         add_sub_test(std::make_unique<tm_tests::DivThrows>());
+        add_sub_test(std::make_unique<tm_tests::MultiplyDot>());
     }
 };
 

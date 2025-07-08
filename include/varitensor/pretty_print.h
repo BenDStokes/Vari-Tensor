@@ -19,7 +19,7 @@ namespace varitensor {
 namespace impl {
 
 inline size_t print_data_width = 5;
-inline int print_data_precision = 2;
+inline int print_data_precision = 1;
 
 // every entry in this string must be EXACTLY 5 lines; the name and width of each
 // letter must be recorded in the subsequent letter_widths map

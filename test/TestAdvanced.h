@@ -5,7 +5,6 @@
 
 #include "TestSet.h"
 #include "varitensor/Tensor.h"
-#include "varitensor/pretty_print.h"
 
 namespace advanced_tests {
 
@@ -43,46 +42,92 @@ struct EpsilonDeltaTwoFree final: TestSet::Test {
 
     bool run_test() override {
         // given
-         const Index i{LATIN}, j{LATIN}, k{LATIN}, l{LATIN}, m{LATIN};
+        const Index i{LATIN}, j{LATIN}, k{LATIN}, l{LATIN}, m{LATIN};
 
-         const Tensor epsilon = levi_civita_symbol({i, j, k});
-         const Tensor delta = kronecker_delta({i, j});
+        const Tensor epsilon = levi_civita_symbol({i, j, k});
+        const Tensor delta = kronecker_delta({i, j});
 
-         // when
-         const Tensor lhs = epsilon[i,j,k] * epsilon[l,m,k];
-         const Tensor rhs = delta[i,l] * delta[j,m] - delta[i,m] * delta[j,l];
+        // when
+        const Tensor lhs = epsilon[i,j,k] * epsilon[l,m,k];
+        const Tensor rhs = delta[i,l] * delta[j,m] - delta[i,m] * delta[j,l];
 
-         // then
-         return lhs == rhs;
+        // then
+        return lhs == rhs;
      }
 };
 
 struct CrossProductIdentity final: TestSet::Test {
-     explicit CrossProductIdentity() : Test("Cross Product Identity") {}
+    explicit CrossProductIdentity() : Test("Cross Product Identity") {}
 
-     bool run_test() override {
-         // given
-         const Index i{LATIN}, j{LATIN}, k{LATIN}, l{LATIN}, m{LATIN};
+    bool run_test() override {
+        // given
+        const Index i{LATIN}, j{LATIN}, k{LATIN},
+                    l{LATIN}, m{LATIN};
 
-         const Tensor epsilon = levi_civita_symbol({i, j, k});
-         Tensor a{i}, b {i}, c{i};
+        const Tensor epsilon = levi_civita_symbol({i, j, k});
+        Tensor a{i}, b {i}, c{i};
 
-         std::ranges::fill(a, 1);
-         std::ranges::fill(b, 2);
-         std::ranges::fill(c, 4);
+        a[0] =  1; b[0] = -1; c[0] =  3;
+        a[1] =  2; b[1] =  4; c[1] =  2;
+        a[2] = -3; b[2] = -1; c[2] = -1;
 
-         Tensor expected{i};
-         std::ranges::fill(expected, 1);
+        Tensor expected{i};
+        expected[0] = -40; expected[1] = 20; expected[2] = 0;
 
-         // when
-         // A x B x C === B (A . C) - C (A . B)
-         // E_ijk * E_klm * a_j * b_l * c_m === b_i (a_i * c_i) - c_i (a_i * b_i)
-         Tensor lhs = epsilon[i, j, k] * epsilon[k, l, m] * a[j] * b[l] * c[m];
-         Tensor rhs = b[i] * (a[i] * c[i]) - c[i] * (a[i] * b[i]);
+        // when
+        // A x B x C === B (A . C) - C (A . B)
+        // E_ijk * E_klm * a_j * b_l * c_m === b_j (a_i * c_i) - c_j (a_i * b_i)
+        Tensor lhs = epsilon[i, j, k] * epsilon[k, l, m] * a[j] * b[l] * c[m];
+        Tensor rhs = b[i] * (a[j] * c[j]) - c[i] * (a[j] * b[j]);
 
-         // then
-         return lhs == rhs && rhs == expected;
-     }
+        // then
+        return lhs == expected && rhs == expected && lhs == rhs;
+    }
+};
+
+struct ComplexTree final: TestSet::Test {
+    explicit ComplexTree() : Test("Complex Tree") {}
+
+    bool run_test() override {
+        // given
+        const Index i{LATIN}, j{LATIN}, k{LATIN};
+
+        const Tensor epsilon = levi_civita_symbol({i, j, k});
+        Tensor a{i}, b {i}, c{i}, d{i};
+
+        a[0] =  1; b[0] = -1; c[0] =  3; d[0] =  1;
+        a[1] =  2; b[1] =  4; c[1] =  2; d[1] = -5;
+        a[2] = -3; b[2] = -1; c[2] = -1; d[2] =  5;
+
+        Tensor expected{k, i};
+        expected[0, 0] = -51;
+        expected[1, 0] = -102;
+        expected[2, 0] = 153;
+        expected[0, 1] = -141;
+        expected[1, 1] = -282;
+        expected[2, 1] = 423;
+        expected[0, 2] = 229;
+        expected[1, 2] = 458;
+        expected[2, 2] = -687;
+
+        // when
+        Tensor result =
+            a[k] * (
+                c[i] * (a[j] * b[j]) +
+                a[i] * (d[j] * c[j]) -
+                d[i]
+            ) -
+            a[k] * (
+                b[i] -
+                a[i] * (
+                    b[j] * c[j] +
+                    d[j] * (a[j] - d[j])
+                )
+            );
+
+        // then
+        return result == expected;
+    }
 };
 
 struct Rank9Operation final: TestSet::Test {
@@ -141,6 +186,7 @@ struct TestAdvanced final: TestSet {
         add_sub_test(std::make_unique<advanced_tests::EpsilonDeltaOneFree>());
         add_sub_test(std::make_unique<advanced_tests::EpsilonDeltaTwoFree>());
         add_sub_test(std::make_unique<advanced_tests::CrossProductIdentity>());
+        add_sub_test(std::make_unique<advanced_tests::ComplexTree>());
         add_sub_test(std::make_unique<advanced_tests::Rank9Operation>());
     }
 };

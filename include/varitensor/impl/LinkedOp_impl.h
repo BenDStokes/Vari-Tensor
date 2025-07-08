@@ -126,13 +126,14 @@ inline void LinkedOp::add_element(const Tensor& tensor, const Operation sign) {
     m_signs.push_back(sign);
 }
 
-inline void LinkedOp::add_element(const LinkedOp& summation, const Operation sign) {
-    m_sub_expressions.emplace_back(summation);
-    m_signs.push_back(sign);
+inline void LinkedOp::add_element(const LinkedOp& linked_op, const Operation sign) {
+    m_modifier += sign == ADD ? linked_op.m_modifier : -linked_op.m_modifier;
+    for (auto& sub_sign: linked_op.m_signs) m_signs.push_back(static_cast<Operation>(sub_sign * sign));
+    for (auto& expression: linked_op.m_sub_expressions) m_sub_expressions.emplace_back(expression);
 }
 
-inline void LinkedOp::add_element(const SummedOp& product, const Operation sign) {
-    m_sub_expressions.emplace_back(product);
+inline void LinkedOp::add_element(const SummedOp& summed_op, const Operation sign) {
+    m_sub_expressions.emplace_back(summed_op);
     m_signs.push_back(sign);
 }
 

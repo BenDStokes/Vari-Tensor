@@ -191,14 +191,14 @@ public:
 
     // short-circuit for scalar
     template<impl::Indexable_c... Indices>
-    double& operator[](Indices...) const requires (sizeof...(Indices) == 0) {
+    double& operator[](Indices...) requires (sizeof...(Indices) == 0) {
         return *m_data;
     }
 
     // short-circuit for all int indices
     template<impl::Indexable_c... Indices>
     requires (impl::AllInt_c<Indices...> && sizeof...(Indices) > 0)
-    double& operator[](Indices... indices) const {
+    double& operator[](Indices... indices) {
         auto data = m_data;
 
         size_t n = 0;
