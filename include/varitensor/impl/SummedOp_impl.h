@@ -144,6 +144,7 @@ inline void SummedOpIterator::reset(const int index_id) const {
 }
 
 inline double SummedOpIterator::deref() const {
+    /* Despite modifying m_repeated_positions, this function is const as it always returns the positions to 0 */
     double sum = 0;
 
     do {

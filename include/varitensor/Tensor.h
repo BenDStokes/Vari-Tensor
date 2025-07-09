@@ -861,7 +861,6 @@ private:
 
 }  // namespace varitensor
 
-#include "impl/increment_positions.h"
 #include "impl/LinkedOp_impl.h"
 #include "impl/pre_defined.h"
 #include "impl/View_impl.h"

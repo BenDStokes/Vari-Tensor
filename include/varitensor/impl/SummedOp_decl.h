@@ -57,7 +57,7 @@ private:
 
     // for index summation
     Dimensions m_repeated;
-    mutable std::vector<int> m_repeated_positions; // mutable for deref() which, though it modifies the positions, always returns them to 0
+    mutable std::vector<int> m_repeated_positions; // mutable for deref()
 
     bool m_end{false};
 };

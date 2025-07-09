@@ -123,23 +123,17 @@ public:
 // =================================================================================================
 //                                                                                 index iteration |
 // =================================================================================================
-/* Note that deref has to be const for this class to maintain a sensible interface, but this
- * requires increment and reset to pretend they are const, even though they're not. This is fine in
- * deref, because it always returns the class to the state it was in before, but these functions are
- * not really const if called on their own.
- */
 
-    void increment(const int index_id) const {
-        if (index_id == m_cached_id) m_data_ptr += m_cached_info.width;
-        else m_data_ptr += m_widths[index_id].width;
+    void increment(const int index_id) { // NOLINT - "increment()" const is only pseudo-const
+        std::as_const(*this).increment(index_id); // std::as_const needed to avoid recursion
     }
 
-    void reset(const int index_id) const {
-        if (index_id == m_cached_id) m_data_ptr -= m_cached_info.total;
-        else m_data_ptr -= m_widths[index_id].total;
+    void reset(const int index_id) { // NOLINT - "reset() const" is only pseudo-const
+        std::as_const(*this).reset(index_id); // std::as_const needed to avoid recursion
     }
 
-    [[nodiscard]] double deref() const { // only pseudo-const
+    [[nodiscard]] double deref() const {
+        /* Despite modifying m_repeated_positions, this function is const as it always returns the positions to 0 */
         double sum = 0;
 
         do sum += *m_data_ptr;
@@ -149,16 +143,35 @@ public:
     }
 
 private:
+    void increment(const int index_id) const { // technically non-const but has to be callable from deref()
+        if (index_id == m_cached_id) m_data_ptr += m_cached_info.width;
+        else if (m_widths.contains(index_id)) m_data_ptr += m_widths.at(index_id).width;
+    }
+
+    void reset(const int index_id) const { // technically non-const but has to be callable from deref()
+        if (index_id == m_cached_id) m_data_ptr -= m_cached_info.total;
+        else if (m_widths.contains(index_id)) m_data_ptr -= m_widths.at(index_id).total;
+    }
+
+// =================================================================================================
+//                                                                                 index iteration |
+// =================================================================================================
+
     friend class ViewIterator<!is_const>;
+    friend struct Reset;
+    friend struct Increment;
+
+    template <ExpressionIterator_c E>
+    friend bool increment_positions(std::vector<int>& positions, const std::vector<Dimension>& dimensions, const E& iterator);
 
 // =================================================================================================
 //                                                                                    data members |
 // =================================================================================================
 
     const Tensor* m_target{nullptr};
-    mutable double* m_data_ptr{nullptr};
+    mutable double* m_data_ptr{nullptr}; // mutable for deref
 
-    mutable std::map<int, WidthInfo> m_widths;
+    std::map<int, WidthInfo> m_widths;
 
     // profiling has indicated that map lookup can be a bottleneck: these caches are used to reduce this
     int m_cached_id{-1};
@@ -166,7 +179,7 @@ private:
 
     // for index contraction
     Dimensions m_repeated;
-    mutable std::vector<int> m_repeated_positions;
+    mutable std::vector<int> m_repeated_positions; // mutable for deref
 };
 
 } // namespace impl

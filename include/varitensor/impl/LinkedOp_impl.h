@@ -7,7 +7,6 @@
 #ifndef VARITENSOR_LINKEDOP_IMPL_H
 #define VARITENSOR_LINKEDOP_IMPL_H
 
-#include "increment_positions.h"
 #include "LinkedOp_decl.h"
 #include "visitors.h"
 
