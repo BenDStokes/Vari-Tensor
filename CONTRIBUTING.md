@@ -1,7 +1,5 @@
 ## Contributing
 
----
-
 Contributions in all forms are welcome!
 - For bug reports, feature requests or questions: please open an issue, making it clear which
 of the aforementioned it relates to
@@ -18,16 +16,12 @@ Ben :)
 
 ## Getting Started
 
----
-
 Once you've cloned the repo, load the CMakeLists.txt into your IDE, and you should be able to
 run the tests via the sole target "run_tests". If you're wondering why I didn't use Google
 Test, it's because I didn't anticipate this growing beyond a personal project, so I just
 made a simple test harness that didn't require the effort of including a third party library.
 
 ## Code Style
-
----
 
 Follow the style of the already-existing code. General guidelines and exceptions are given
 below...
@@ -69,8 +63,6 @@ at compile time for increased performance, deny() cannot.
 
 ## Naming Conventions
 
----
-
  - Follow the conventions of the already-existing code — it's fairly standard
  - Prefix members with "m_" and statics with "s_". Suffix concepts with "_c".
  - Prefix header guards with VARITENSOR_
@@ -78,8 +70,6 @@ at compile time for increased performance, deny() cannot.
 be under the namespace "varitensor::impl".
 
 ## Overview of architecture
-
----
 
 Programmatically, a tensor is essentially just a multidimensional array. Internally they
 consist of a size, a double* to a block of heap data, and a vector of dimensions that
@@ -124,7 +114,7 @@ iterate over their target tensors.
 
 The lynch-pin of the whole operation is the increment_positions() function, which is used to
 perform all incrementation of iterators, whether over their position to advance the iterator,
-or over repeated indices to find the iterator's value the current point.
+or over repeated indices to find the iterator's value at the current point.
 
 ---
 
@@ -141,7 +131,7 @@ Another point of subtlety in the ViewIterator concerns the const-ness of deref()
 and reset(). The deref() function is conceptually const, so users should be able to rely on
 this, but, to calculate its value, it has to iterate through an entire cycle of the
 m_repeated_positions vector. This is fine because the positions always start at 0 and return
-to zero by the end of the function. However, since we pass the call through
+to 0 by the end of the function. However, since we pass the call through
 increment_positions(), there must be const versions of increment()/reset() for it to call,
 despite the fact that these operations are individually NOT const.
 
