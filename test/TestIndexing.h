@@ -4,7 +4,6 @@
 #include <memory>
 
 #include "TestSet.h"
-#include "varitensor/pretty_print.h"
 #include "varitensor/Tensor.h"
 
 namespace local {

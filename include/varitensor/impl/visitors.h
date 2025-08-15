@@ -15,12 +15,21 @@ inline auto Deref = [](const auto& expression) {return expression.deref();};
 inline auto VBegin = [](auto& expression) {return expression.vbegin();};
 inline auto GetDimensions = [](auto& expression) {return expression.dimensions();};
 inline auto GetSize = [](auto& expression) {return expression.size();};
+inline auto GetData = [](auto& iter) {return iter.data();};
+inline auto IsContiguous = [](const auto& iter) {return iter.is_contiguous();};
+
+struct GetTensor{
+    template <typename E>
+    Tensor operator()(E&& expression) {
+        return Tensor{expression};
+    }
+};
 
 struct Reset {
     explicit Reset(const int index_id_): index_id{index_id_} {}
 
     template <ExpressionIterator_c E>
-    void operator()(const E& expression) const {expression.reset(index_id);}
+    void operator()(const E& iter) const {iter.reset(index_id);}
 
     int index_id;
 };
@@ -29,11 +38,11 @@ struct Increment {
     explicit Increment(const int index_id_): index_id{index_id_} {}
 
     template <ExpressionIterator_c E>
-    void operator()(const E& expression) const {expression.increment(index_id);}
+    void operator()(const E& iter) const {iter.increment(index_id);}
 
     int index_id;
 };
 
 } // namespace varitensor::impl
 
-#endif
+#endif // VARITENSOR_VISITORS_H

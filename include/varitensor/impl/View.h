@@ -8,12 +8,17 @@
 #define VARITENSOR_VIEW_H
 
 #include <map>
+#include <utility>
 #include <vector>
 
 #include "common.h"
 #include "ExpressionIteratorBase.h"
+#include "varitensor/impl/deny.h"
 
 namespace varitensor {
+
+class Tensor;
+
 namespace impl {
 
 struct WidthInfo {
@@ -28,12 +33,7 @@ struct WidthInfo {
 template<bool is_const=false>
 class ViewIterator: public ExpressionIteratorBase {
 public:
-// =================================================================================================
-//                                                                       ctor / dtor / copy / move |
-// =================================================================================================
-
     ViewIterator() = default;
-
     ViewIterator(const Tensor* target, double* data_ptr, const Dimensions& dimensions):
         m_target{target},
         m_data_ptr{data_ptr}
@@ -42,8 +42,8 @@ public:
         for (auto& dimension: dimensions) counts[dimension.index.id()] += 1;
 
         for (auto& dimension: dimensions) {
-            soft_deny(counts[dimension.index.id()] > 2,
-                      "Indices in contraction expressions cannot appear more than twice!");
+            deny(counts[dimension.index.id()] > 2,
+                      "Indices in contraction expressions cannot appear more than twice");
 
             if (counts[dimension.index.id()] == 2) { // repeated index
                 m_repeated.push_back(dimension);
@@ -73,10 +73,6 @@ public:
     ViewIterator(ViewIterator&& other) noexcept = default;
     ViewIterator& operator=(ViewIterator&& other) = default;
 
-// =================================================================================================
-//                                                                              forwards iteration |
-// =================================================================================================
-
     ViewIterator& operator++() {
         if (!increment_positions(m_positions, m_dimensions, *this)) {
             m_data_ptr = nullptr;
@@ -92,7 +88,7 @@ public:
 
     double& operator*() const requires(!is_const) {
         deny(is_contracted(),
-             "Cannot dereference non-const contracted iterator! Use std::as_const or cbegin/cend for const iteration.");
+             "Cannot dereference non-const contracted iterator - use std::as_const or cbegin/cend for const iteration");
         return *m_data_ptr;
     }
 
@@ -100,15 +96,12 @@ public:
         return deref();
     }
 
+
     template<typename T>
     requires std::is_same_v<T, ViewIterator<>> || std::is_same_v<T, ViewIterator<true>>
     bool operator==(const T& other) const {
         return m_data_ptr == other.m_data_ptr;
     }
-
-// =================================================================================================
-//                                                                                     information |
-// =================================================================================================
 
     [[nodiscard]] bool is_contracted() const { // used to enforce the fact that contractions can only be r-values
         return !m_repeated.empty();
@@ -119,10 +112,6 @@ public:
     [[nodiscard]] bool finished() const {
         return m_data_ptr == nullptr;
     }
-
-// =================================================================================================
-//                                                                                 index iteration |
-// =================================================================================================
 
     void increment(const int index_id) { // NOLINT - "increment()" const is only pseudo-const
         std::as_const(*this).increment(index_id); // std::as_const needed to avoid recursion
@@ -142,6 +131,21 @@ public:
         return sum;
     }
 
+    bool is_contiguous() const {
+        if (is_contracted()) return false; // contracted views counted as non-contiguous
+
+        size_t expected_width = 1;
+        for (const auto& dimension: m_dimensions) {
+            if (dimension.width != expected_width) return false;
+            expected_width *= dimension.size();
+        }
+        return true;
+    }
+
+    [[nodiscard]] double* data() const {
+        return m_data_ptr;
+    }
+
 private:
     void increment(const int index_id) const { // technically non-const but has to be callable from deref()
         if (index_id == m_cached_id) [[likely]] m_data_ptr += m_cached_info.width;
@@ -153,20 +157,12 @@ private:
         else if (m_widths.contains(index_id)) m_data_ptr -= m_widths.at(index_id).total;
     }
 
-// =================================================================================================
-//                                                                                 index iteration |
-// =================================================================================================
-
     friend class ViewIterator<!is_const>;
     friend struct Reset;
     friend struct Increment;
 
     template <ExpressionIterator_c E>
     friend bool increment_positions(std::vector<int>& positions, const std::vector<Dimension>& dimensions, const E& iterator);
-
-// =================================================================================================
-//                                                                                    data members |
-// =================================================================================================
 
     const Tensor* m_target{nullptr};
     mutable double* m_data_ptr{nullptr}; // mutable for deref
@@ -210,6 +206,11 @@ public:
     [[nodiscard]] const_iterator cend() const;
     [[nodiscard]] impl::ExpressionIterator vbegin() const;
 
+    [[nodiscard]] double* data() const;
+    [[nodiscard]] bool is_scalar() const;
+    [[nodiscard]] double get_scalar() const;
+
+    void populate(Tensor& tensor, bool allocate = true) const;
 
 private:
     const Tensor& m_target;
@@ -219,4 +220,4 @@ private:
 
 } // namespace varitensor
 
-#endif
+#endif // VARITENSOR_VIEW_H

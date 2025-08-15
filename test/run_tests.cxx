@@ -1,5 +1,3 @@
-
-
 #include <iostream>
 #include <memory>
 
@@ -10,25 +8,27 @@
 #include "TestIndexing.h"
 #include "TestIndexManipulation.h"
 #include "TestInformation.h"
-#include "TestLinearOperators.h"
 #include "TestManipulation.h"
 #include "TestScalar.h"
 #include "TestSet.h"
+#include "TestTensorAddition.h"
 #include "TestTensorMultiplication.h"
+#include "TestBulk.h"
 
 int main(int, char**) {
     std::vector<std::unique_ptr<TestSet>> test_sets;
     test_sets.emplace_back(std::make_unique<TestScalar>());
-    test_sets.emplace_back(std::make_unique<TestLinearOperations>());
+    test_sets.emplace_back(std::make_unique<TestTensorAddition>());
     test_sets.emplace_back(std::make_unique<TestIndexing>());
     test_sets.emplace_back(std::make_unique<TestComparison>());
     test_sets.emplace_back(std::make_unique<TestTensorMultiplication>());
-    test_sets.emplace_back(std::make_unique<TestAdvanced>());
     test_sets.emplace_back(std::make_unique<TestConstruction>());
     test_sets.emplace_back(std::make_unique<TestIndexManip>());
     test_sets.emplace_back(std::make_unique<TestAssignmentOperations>());
     test_sets.emplace_back(std::make_unique<TestInformation>());
     test_sets.emplace_back(std::make_unique<TestManipulation>());
+    test_sets.emplace_back(std::make_unique<TestBulk>());
+    test_sets.emplace_back(std::make_unique<TestAdvanced>());
 
     int passes{0};
     std::vector<std::string> failures{};
@@ -57,7 +57,7 @@ int main(int, char**) {
                 failures.push_back(test_set->name + ": " + test->name);
             }
             std::cout << "\t";
-            std::cout.width(30);
+            std::cout.width(40);
             std::cout << std::left << test->name + ":";
             std::cout.width(0);
             std::cout << result << "\n";

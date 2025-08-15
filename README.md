@@ -1,11 +1,11 @@
-# *VariTensor*
+# *Vari-Tensor*
 Ergonomic tensors with variance
 
 <a href="#sparkles-features"> Features </a> | <a href="#%EF%B8%8F-installation"> Installation </a> | <a href="#arrow_forward-usage"> Usage </a> | <a href="#%EF%B8%8F-performance"> Performance </a> | <a href="#scroll-license"> Licence </a>
 
 ## :sparkles: Features
 
-VariTensor provides a beautiful, natural interface for full-featured, runtime-dynamic tensors.
+Vari-Tensor provides a beautiful, natural interface for full-featured, runtime-dynamic tensors.
 
 - All common tensor operations, implemented with lazy evaluation
 - Compatability with std::ranges
@@ -18,9 +18,20 @@ VariTensor provides a beautiful, natural interface for full-featured, runtime-dy
 
 ## 🛠️ Installation
 
-### Direct Download
+Compilation has been verified with the following compilers:
 
-VariTensor is a **header-only** library, so to install it directly, you can download the project's source code and add "varitensor/include" to your includes.
+| Compiler | Version     |
+|----------|-------------|
+| GCC      | 15.2.0      |
+| MSVC     | 19.44.35217 |
+
+Older versions may work, but C++23 is required.
+
+### Source Download
+
+The sources can be downloaded from this repository and are ready to be built as-is without
+additional configuration. Vari-Tensor has **no dependencies** and can easily be built with
+CMake.
 
 ## :arrow_forward: Usage
 
@@ -44,11 +55,11 @@ int main() {
     };
     // The alternative aliases UPPER and LOWER can also be used for index variance
 
-    // Tensors are forward iterable so are compatible with many STL algorithms
+    // Tensors are forward iterable so are compatible with many STL algorithms   
     std::ranges::iota(T, 0);
-    std::ranges::iota(U, 0);
+    std::ranges::iota(U, 1);
 
-    // VariTensor uses operator[] to index tensors
+    // Vari-Tensor uses operator[] to index tensors
     // We could omit the indices here as they are the same we declared with, but they aid readability
     Tensor V = T[mu] * U[mu, nu];
 }
@@ -76,12 +87,12 @@ int main() {
     // Named indices of the same size always compare equal and keep their names when printing
     Index i{"i", LATIN}, j{"j", LATIN}, k{"k", LATIN};
 
-    // VariTensor supports a wide range of punctuation, e.g. '
+    // Vari-Tensor supports a wide range of punctuation, e.g. '
     Tensor T_primed{"T'", {
-        {i, CONTRAVARIANT},
-        {j, CONTRAVARIANT},
-        {k, COVARIANT}
-    }
+            {i, CONTRAVARIANT},
+            {j, CONTRAVARIANT},
+            {k, COVARIANT}
+        },
     };
     // We could also use T.set_name() after initialisation; this is useful for naming expressions
 
@@ -108,13 +119,12 @@ Rank 3 Tensor
 
 ```
 
-> :information_source: **Note**
->
-> By default, all tensors are named "VariTensor" and all indices are named "idxN" where N is the underlying index ID.
+> :information_source: **Note:** By default, all tensors are named "Vari-Tensor" and all
+> indices are named "idxN" where N is the underlying index ID.
 
-> :information_source: **Note**
->
-> The precision of the display and the width of the fields can be set with varitensor::set_print_precision() and varitensor::set_print_data_width(). If a data element exceeds the field width, it will be truncated with a ~ symbol.
+> :information_source: **Note:** The precision of the display and the width of the fields
+> can be set with varitensor::set_print_precision() and varitensor::set_print_data_width().
+> If a data element exceeds the field width, it will be truncated with a ~ symbol.
 
 <h3> Flexible Indexing </h3>
 
@@ -124,13 +134,13 @@ Rank 3 Tensor
 
 using namespace varitensor;
 
+// Vari-Tensor's interface can perform a variety of indexing operations
 int main() {
-    // VariTensor's interface can perform a variety of indexing operations
     Index i{"i", LATIN};
     Index mu{"mu", GREEK}, nu{"nu", GREEK};
 
     Tensor T{mu, nu};
-    std::ranges::iota(T, 1);
+    std::ranges::iota(T, 0);
 
     T[1, 0] = 10; // Set a particular value of T
  
@@ -150,9 +160,8 @@ int main() {
 }
 ```
 
-> :information_source: **Note**
->
-> The indexing operator, [ ], returns a View object that can be used to iterate over tensors or initialise new ones.
+> :information_source: **Note:** The indexing operator, [ ], returns a View object that
+> can be used to iterate over tensors or initialise new ones.
 
 ### Metric Tensor
 
@@ -172,7 +181,7 @@ MetricFunction my_minkowski_metric = [](int i, int j) -> double {
 int main() {
     Index i{"i", LATIN}, j{"j", LATIN}, k{"k", LATIN};
 
-    Tensor T{i, j};
+    Tensor T{i, j}; // Both indices default to covarient
     Tensor g = metric_tensor({
             {i, CONTRAVARIANT},
             {k, CONTRAVARIANT}
@@ -187,6 +196,9 @@ int main() {
 ### Other Features
 
 ```c++
+// All ctors can be passed an initial fill value as the last parameter
+Tensor Ones{{i, j}, 1};
+
 // Reference iteration
 for (auto& value: T) {...}
 for (auto& value: T[mu, 0]) {...}
@@ -201,32 +213,30 @@ for (auto iter=T.begin(), end=T.end(); iter!=end; ++iter) {
 varitensor::kronecker_delta(...);
 varitensor::levi_civita_symbol(...);
 
-// Numerous information and manipulation functions
+// Numerous data and manipulation functions
 T.transpose(i, j);
-T.relable(i, j);
+T.relabel(i, j);
 Index first_index = T.indices(0);
 // ...and many more!
 ```
 
 ## ⏱️ Performance
 
-VariTensor generally performs towards the slower end of Tensor libraries. At this time, this library is more oriented towards usability than speed, though I hope to improve this in the future.
+Whilst Vari-Tensor isn't slow, alternatives like Eigen or Fastor are faster. This is a
+necessary consequence of being a runtime-dynamic library and providing a more natural
+interface.
 
-> :information_source: **Note**
->
-> By default, VariTensor validates all tensor operations at runtime and throws if any of them are mathematically ill-formed. For increased performance, these checks can be toggled off at compile time by compiling with:
-> ```
-> -DVARITENSOR_VALIDATION_ON=0
-> ```
->Or, in cmake:
-> ```cmake
-> set(VARITENSOR_VALIDATION_ON 0)
-> ```
+> :information_source: **Note:** By default, Vari-Tensor validates all tensor operations
+> at runtime and throws if any of them are mathematically ill-formed. For increased
+> performance, these checks can be toggled off at compile time by compiling by setting
+> `VARITENSOR_VALIDATION_ON` to 0.
+
+> :information_source: **Note:** Compile with the `-mavx` flag to further optimise some common operations.
 
 ## :scroll: License
 
-VariTensor is licenced under the [Mozilla Public Licence v2.0](https://www.mozilla.org/en-US/MPL/2.0/).
+Vari-Tensor is licenced under the [Mozilla Public Licence v2.0](https://www.mozilla.org/en-US/MPL/2.0/).
 
-<br/>
+---
 
-*Copyright &copy; Ben Stokes, 2025*
+*Copyright &copy; Ben Stokes, 2026*

@@ -2,9 +2,11 @@
 #define TEST_INFORMATION_H
 
 #include <memory>
+#include <sstream>
 #include <utility>
 
 #include "TestSet.h"
+#include "varitensor/pretty_print.h"
 #include "varitensor/Tensor.h"
 
 struct GetName final: TestSet::Test {
@@ -185,6 +187,18 @@ struct ContractionIteration final: TestSet::Test {
     }
 };
 
+struct PrettyPrint final: TestSet::Test {
+    explicit PrettyPrint() : Test("PrettyPrint") {}
+
+    bool run_test() override {
+        const Index i{LATIN}, j{LATIN}, k{LATIN};
+        const Tensor t1{i, j, k};
+        std::stringstream stream;
+        stream << t1;
+        return true;
+    }
+};
+
 struct TestInformation final: TestSet {
     explicit TestInformation() : TestSet("Test Information Retrieval") {
         add_sub_test(std::make_unique<GetName>());
@@ -199,6 +213,7 @@ struct TestInformation final: TestSet {
         add_sub_test(std::make_unique<IndexPosition>());
         add_sub_test(std::make_unique<IntervalNaming>());
         add_sub_test(std::make_unique<ContractionIteration>());
+        add_sub_test(std::make_unique<PrettyPrint>());
     }
 };
 

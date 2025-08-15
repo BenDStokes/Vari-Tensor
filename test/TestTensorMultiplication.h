@@ -8,8 +8,8 @@
 
 namespace tm_tests {
 
-struct TwoByTwoTimesTwoByOneFree final: TestSet::Test {
-    explicit TwoByTwoTimesTwoByOneFree() : Test("2x2*2x1 Free") {}
+struct TwoDTimesOneD final: TestSet::Test {
+    explicit TwoDTimesOneD() : Test("3x3*1x3 Free") {}
 
     bool run_test() override {
         //given
@@ -38,7 +38,6 @@ struct TwoByTwoTimesTwoByOneFree final: TestSet::Test {
 
         //when
         Tensor result = first * second;
-        result.set_name("result");
 
         //then
         if (result.rank() != 3) return false;
@@ -46,8 +45,8 @@ struct TwoByTwoTimesTwoByOneFree final: TestSet::Test {
     }
 };
 
-struct TwoByTwoTimesTwoByTwoFree final: TestSet::Test {
-    explicit TwoByTwoTimesTwoByTwoFree() : Test("2x2*2x2 Free") {}
+struct TwoDTimesTwoDFree final: TestSet::Test {
+    explicit TwoDTimesTwoDFree() : Test("2x2*2x2 Free") {}
 
     bool run_test() override {
         //given
@@ -178,8 +177,8 @@ struct MultiplyDot final: TestSet::Test {
 
 struct TestTensorMultiplication final: TestSet {
     explicit TestTensorMultiplication() : TestSet("Test Tensor Multiplication") {
-        add_sub_test(std::make_unique<tm_tests::TwoByTwoTimesTwoByOneFree>());
-        add_sub_test(std::make_unique<tm_tests::TwoByTwoTimesTwoByTwoFree>());
+        add_sub_test(std::make_unique<tm_tests::TwoDTimesOneD>());
+        add_sub_test(std::make_unique<tm_tests::TwoDTimesTwoDFree>());
         add_sub_test(std::make_unique<tm_tests::SingleRepeated>());
         add_sub_test(std::make_unique<tm_tests::Mixed>());
         add_sub_test(std::make_unique<tm_tests::DivThrows>());

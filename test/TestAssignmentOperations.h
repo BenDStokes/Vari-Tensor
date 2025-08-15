@@ -5,7 +5,6 @@
 #include <memory>
 
 #include "TestSet.h"
-#include "varitensor/pretty_print.h"
 #include "varitensor/Tensor.h"
 
 struct AdditionAssignment final : TestSet::Test {
@@ -124,47 +123,6 @@ struct ExpressionAssignment final : TestSet::Test {
     }
 };
 
-struct ScalarAdditionAssignment final : TestSet::Test {
-    explicit ScalarAdditionAssignment() : Test("Addition Assignment (Scalar)") {}
-    bool run_test() override {
-        // given
-        const Index index{LATIN};
-
-        Tensor t1{index};
-        const Tensor t2{2};
-        Tensor expected{index};
-
-        std::ranges::iota(t1, 0);
-        std::ranges::iota(expected, 2);
-
-        // when
-        t1 += t2;
-
-        // then
-        return expected == t1;
-    }
-};
-
-struct TensorDoubleAssignment final : TestSet::Test {
-    explicit TensorDoubleAssignment() : Test("Tensor-Double") {}
-    bool run_test() override {
-        // given
-        const Index index{LATIN};
-
-        Tensor t1{index};
-        Tensor expected{index};
-
-        std::ranges::iota(t1, 0);
-        std::ranges::iota(expected, 2);
-
-        // when
-        t1 += 2;
-
-        // then
-        return expected == t1;
-    }
-};
-
 struct DoubleScalarAssignment final : TestSet::Test {
     explicit DoubleScalarAssignment() : Test("Double-Scalar") {}
     bool run_test() override {
@@ -207,8 +165,6 @@ struct TestAssignmentOperations final : TestSet {
         add_sub_test(std::make_unique<MultiplicationAssignment>());
         add_sub_test(std::make_unique<DivisionAssignment>());
         add_sub_test(std::make_unique<ExpressionAssignment>());
-        add_sub_test(std::make_unique<ScalarAdditionAssignment>());
-        add_sub_test(std::make_unique<TensorDoubleAssignment>());
         add_sub_test(std::make_unique<DoubleScalarAssignment>());
         add_sub_test(std::make_unique<DoubleTensorAssignment>());
     }

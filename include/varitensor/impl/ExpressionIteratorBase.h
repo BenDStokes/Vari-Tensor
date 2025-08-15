@@ -4,18 +4,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#ifndef VARITENSOR_EXPRESSIONITERATOR_H
-#define VARITENSOR_EXPRESSIONITERATOR_H
+#ifndef VARITENSOR_EXPRESSION_ITERATOR_H
+#define VARITENSOR_EXPRESSION_ITERATOR_H
 
 #include "common.h"
 
 namespace varitensor::impl {
 
+struct Preparatory;
+
 template <ExpressionIterator_c E>
 bool increment_positions( // static to avoid having to use virtual functions
     std::vector<int>& positions,
     const std::vector<Dimension>& dimensions,
-    const E& iterator // NB: not really const but we have to pretend to maintain the constness of the * operators
+    const E& iterator // not really const, but we have to pretend to maintain the constness of the * operators
 ) {
     /**
      * Increments the positions vector in accordance with the dimensions vector. The iterator
@@ -25,7 +27,7 @@ bool increment_positions( // static to avoid having to use virtual functions
     for (size_t i=0; i<positions.size(); ++i) {
         // check if we're about to overflow the next index
         if (positions[i] + 1 == dimensions[i].index.size()) [[unlikely]] {
-            // if not, reset it and move on to the next one
+            // if so, reset it and move on to the next one
             positions[i] = 0;
             iterator.reset(dimensions[i].index.id());
             continue;
@@ -43,44 +45,28 @@ bool increment_positions( // static to avoid having to use virtual functions
 }
 
 class ExpressionIteratorBase {
-/** Class to reduce code duplication in expression iterators
- *
- * Virtual functions have been omitted for performance
- */
+    /** Class to reduce code duplication in expression iterators
+     *
+     * Virtual functions have been omitted for performance
+     */
 public:
     using iterator_category = std::forward_iterator_tag;
     using difference_type   = std::ptrdiff_t;
     using value_type        = double;
 
-    [[nodiscard]] const std::vector<int>& positions() {
-        return m_positions;
-    }
+    ExpressionIteratorBase() = default;
+    explicit ExpressionIteratorBase(Preparatory& preparatory);
 
-    [[nodiscard]] int positions(const int index) const {
-        return m_positions[index];
-    }
-
-    [[nodiscard]] int positions(const Index& index) const {
-        for (size_t i = 0; i < m_dimensions.size(); ++i) {
-            if (m_dimensions[i].index == index) return m_positions[i];
-        }
-        throw std::runtime_error("Unable to find index!");
-    }
-
-    [[nodiscard]] const Dimensions& dimensions() const {
-        return m_dimensions;
-    }
-
-    [[nodiscard]] size_t size() const {
-        return m_size;
-    }
-
-    [[nodiscard]] bool is_scalar() const {
-        return m_size == 1;
-    }
-
+    [[nodiscard]] std::vector<int>& positions();
+    [[nodiscard]] int positions(int index) const;
+    [[nodiscard]] int positions(const Index& index) const;
+    [[nodiscard]] const Dimensions& dimensions() const;
+    [[nodiscard]] size_t size() const;
+    [[nodiscard]] bool is_scalar() const;
 
 protected:
+    friend class Tensor;
+
     size_t m_size{1};
     Dimensions m_dimensions;
     std::vector<int> m_positions;
@@ -88,4 +74,4 @@ protected:
 
 } // namespace varitensor::impl
 
-#endif
+#endif // VARITENSOR_EXPRESSION_ITERATOR_H

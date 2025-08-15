@@ -11,15 +11,10 @@ done fits with the goals of the project.
 
 Keep all discussions civil and respectful!
 
-Thank you for your attention,\
-Ben :)
-
 ## Getting Started
 
 Once you've cloned the repo, load the CMakeLists.txt into your IDE, and you should be able to
-run the tests via the sole target "run_tests". If you're wondering why I didn't use Google
-Test, it's because I didn't anticipate this growing beyond a personal project, so I just
-made a simple test harness that didn't require the effort of including a third party library.
+run the tests via the sole target "run_tests".
 
 ## Code Style
 
@@ -48,7 +43,8 @@ ClassName::Classname(int param1, int param2):
 }
 ```
 
-Single line control statements are OK as long as they are simple and actually on a single line:
+Single line control statements are OK as long as they do one simple thing and are actually on a
+single line:
 
 ```c++
 if (a > b) return a; // good
@@ -57,9 +53,8 @@ if (a > b)
     return a; // bad
 ```
 
-Use varitensor::soft_deny() to deny things that don't make mathematical sense and
-varitensor::deny() to deny more abstract things. The soft_deny function can be toggled off
-at compile time for increased performance, deny() cannot.
+Use varitensor::impl::deny() to deny things that don't make mathematical sense. This
+function can be toggled off at compile time for increased performance.
 
 ## Naming Conventions
 
@@ -73,8 +68,8 @@ be under the namespace "varitensor::impl".
 
 Programmatically, a tensor is essentially just a multidimensional array. Internally they
 consist of a size, a double* to a block of heap data, and a vector of dimensions that
-describes the data's shape. In VariTensor, each dimension also has "variance"
-(UPPER/CONTRACVARIANT or LOWER/COVARIANT) which if you're not familiar with the maths can
+describes the data's shape. In Vari-Tensor, each dimension also has "variance"
+(UPPER/CONTRAVARIANT or LOWER/COVARIANT) which if you're not familiar with the maths can
 be thought of analogous to a unit of measure for that dimension.
 
 Throughout the library and the rest of this document, a certain amount of familiarity with
@@ -83,22 +78,22 @@ tensors and their accompanying jargon is assumed.
 ---
 
 Unless basic information (eg. the number of indices) is being retrieved or modified,
-VariTensor uses three objects to capture tensor expressions:
+Vari-Tensor uses three objects to capture tensor expressions:
 
 - View — used to express unary operations that amount to viewing, slicing or contracting a
   tensor
 - LinkedOp — used to express binary operations (currently just + and -) where repeated
   indices should be "linked" together
-- SummedOp — used to express binary operations (currently just * and /) where repeated
-  indices should be summed over (the Einstein summation convention)
+- ProductOp — used to express binary operations (currently just * and /) where repeated
+  indices should be summed over with the Einstein summation convention
 
-The SummedOp and LinkedOp classes are effectively lists of pointers to other tensor
+The ProductOp and LinkedOp classes are effectively lists of pointers to other tensor
 expressions. The View class is effectively a pointer to a tensor. When a user writes a
 tensor expression, the two operation classes form the branches of an expression tree,
 with View being the leaves.
 
 ```
-T = A * (B - C)  ->   SummedOp
+T = A * (B - C)  ->   ProductOp
                             |
                       View  ⊥  LinkedOp
                         |            |
@@ -142,11 +137,28 @@ annoying linter warnings. These issues are currently resolved as follows:
  - Several members are declared mutable so that they can be modified by deref() and
 by increment()/reset() when called under deref()
  - increment()/reset() both have a private overload that is declared const but isn't really
-as it modifies the state - use these with caution!
+as it modifies the state – use these with caution!
  - increment()/reset() have public overloads that are (correctly) not declared const but only
-call the (supriously) const private versions; we therefore have to swallow the clang tiday
+call the (spuriously) const private versions; we therefore have to swallow the clang tidy
 warning with NOLINT so that users don't have to
 
-This is convoluted, but it achieves the correct public interface. SummedIterator also has this
+This is convoluted, but it achieves the correct public interface. ProductIterator also has this
 problem to a lesser extent, but since it's currently under namespace "impl", we resolve it by
 simply declaring m_repeated_positions as mutable.
+
+---
+
+As of the last major upgrade, Vari-Tensor now has two different ways of resolving expressions
+that can be thought of as two different "modes". The general fallback (also used when
+the user doesn't want to resolve the whole expression at once) is the original iterator mode.
+
+However, if we are resolving the whole expression (e.g. for an assignment) and it falls within
+a set of operations which can be efficiently optimised, a new "bulk" mode is used. This mode
+is far faster than the iterators as it deals directly with the memory and can employ CPU
+vectorisation, but algorithms only exist for common cases.
+
+These two systems are individually very understandable, but the boundary where they meet can
+be complex. The populate() functions govern which algorithms are used to resolve different
+cases. They accomplish this by creating a "Preparatory" object that optimistically prepares
+to execute a bulk algorithm but can seamlessly switch to having prepared to use the iterators
+at any point.

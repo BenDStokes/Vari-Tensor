@@ -8,24 +8,37 @@
 #define VARITENSOR_DENY_H
 
 #ifndef VARITENSOR_VALIDATION_ON
+
 #define VARITENSOR_VALIDATION_ON 1
 #include <stdexcept>
+
 #endif
 
-namespace varitensor::impl {
+namespace varitensor {
+
+struct TensorLogicError final: std::logic_error {
+    explicit TensorLogicError(const std::string& message):
+        std::logic_error("<Vari-Tensor> Tensor logic error: " + message)
+    {}
+};
+
+namespace impl {
+
+struct VariTensorInternalError final: std::logic_error {
+    explicit VariTensorInternalError(const std::string& message):
+        std::logic_error("<Vari-Tensor> Tensor logic error: " + message)
+    {}
+};
 
 inline void deny(const bool condition, const std::string& message) {
-    if (condition) [[unlikely]] {
-        throw std::logic_error(message);
-    }
-}
-
-inline void soft_deny(const bool condition, const std::string& message) {
     if constexpr (VARITENSOR_VALIDATION_ON) {
-        deny(condition, message);
+        if (condition) [[unlikely]] {
+            throw TensorLogicError(message);
+        }
     }
 }
 
-} // namespace varitensor::impl
+} // namespace impl
+} // namespace varitensor
 
-#endif
+#endif // VARITENSOR_DENY_H
