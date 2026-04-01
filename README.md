@@ -27,6 +27,11 @@ Compilation has been verified with the following compilers:
 
 Older versions may work, but C++23 is required.
 
+### Header-Only
+
+Vari-Tensor includes a header-only distribution. If you want to start using Vari-Tensor
+with minimal setup, you can simply place `varitensor.h` in your project and include it.
+
 ### Source Download
 
 The sources can be downloaded from this repository and are ready to be built as-is without
