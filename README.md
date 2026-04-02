@@ -233,7 +233,7 @@ interface.
 
 > :information_source: **Note:** By default, Vari-Tensor validates all tensor operations
 > at runtime and throws if any of them are mathematically ill-formed. For increased
-> performance, these checks can be toggled off at compile time by compiling by setting
+> performance, these checks can be toggled off at compile time by setting
 > `VARITENSOR_VALIDATION_ON` to 0.
 
 > :information_source: **Note:** Compile with the `-mavx` flag to further optimise some common operations.
@@ -241,7 +241,3 @@ interface.
 ## :scroll: License
 
 Vari-Tensor is licenced under the [Mozilla Public Licence v2.0](https://www.mozilla.org/en-US/MPL/2.0/).
-
----
-
-*Copyright &copy; Ben Stokes, 2026*
