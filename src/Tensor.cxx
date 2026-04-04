@@ -309,9 +309,8 @@ Tensor& Tensor::set_name(const std::string& name) {
 }
 
 Tensor& Tensor::transpose(const Index& first, const Index& second) {
-    /* Note that we can't just swap the indices as this would mess up the SIMD memory
-     * alignment; we have to perform a true transposition.
-     */
+    // Note that we can't just swap the indices as this would mess up the memory alignment; we have to
+    // perform a true transposition.
 
     impl::deny(rank() < 2, "Tensor has too few indices for transposition");
     impl::deny(first == second, "Cannot transpose identical indices");
@@ -550,7 +549,6 @@ Tensor& operator/=(Tensor& first, const double& second) {
 // =================================================================================================
 
 bool operator==(const Tensor& first, const Tensor& second) {
-    // this operator ignores the name and tensor_class attributes
     try {
         for (const auto& value: Tensor{first - second}) {
             if (value != 0) return false; // indices MUST be linked when comparing

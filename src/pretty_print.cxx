@@ -541,20 +541,21 @@ void add_header_indices(const Dimensions& dimensions, std::vector<std::string>& 
     }
 }
 
+/**
+ * @brief Outputs the "title" of the tensor in fancy lettering with the indices in their correct positions
+ *
+ * e.g.   ______
+ *       |__  __|
+ *         | |    mu
+ *         | |          =
+ *         |_|      nu
+ */
 void write_header(
     std::ostream& stream,
     const Dimensions& dimensions,
     const std::string& name,
     const TensorClass tensor_type
 ) {
-    /** Outputs the "title" of the tensor in fancy lettering with the indices in their correct positions
-     * e.g.   ______
-     *       |__  __|
-     *         | |    mu
-     *         | |          =
-     *         |_|      nu
-     */
-
     auto add_space = [](std::vector<std::string>& header) {
         for(auto& line: header) line += " ";
     };
@@ -577,10 +578,12 @@ void write_header(
     output_header(header);
 }
 
+/**
+ * @brief Writes a small note of what "sort" of tensor we have
+ *
+ * e.g. "Rank 5 Tensor", "Column Vector", etc.
+ */
 void write_subtitle(std::ostream& stream, const Tensor& tensor, const TensorClass print_type) {
-    /** writes a small note of what "sort" of tensor we have
-     * e.g. "Rank 5 Tensor", "Column Vector", etc.
-     */
     if (print_type == METRIC_TENSOR) stream << "Metric Tensor\n\n";
     else if (print_type == LEVI_CIVITA_SYMBOL) stream << "Levi-Civita Symbol\n\n";
     else if (print_type == KRONECKER_DELTA) stream << "Kronecker Delta\n\n";

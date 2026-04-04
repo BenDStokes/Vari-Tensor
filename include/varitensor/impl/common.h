@@ -18,7 +18,16 @@ namespace varitensor {
 class Tensor;
 class View;
 
+/**
+ * @brief Aliases used to express index variance
+ */
 enum Variance {COVARIANT = 0, LOWER = 0, CONTRAVARIANT = 1, UPPER = 1};
+
+/**
+ * @brief Represents an index with a variance
+ *
+ * Used when constructing tensors.
+ */
 struct VarianceQualifiedIndex {
     Index index;
     Variance variance = COVARIANT;
@@ -27,6 +36,9 @@ struct VarianceQualifiedIndex {
     }
 };
 
+/**
+ * @brief Helper alias to provide the correct signature for user-defined metric functions
+ */
 using MetricFunction = std::function<double(int, int)>;
 
 namespace impl {

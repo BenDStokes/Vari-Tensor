@@ -13,17 +13,18 @@ namespace varitensor::impl {
 
 struct Preparatory;
 
+/**
+ * @brief Increments the positions vector in accordance with the dimensions vector
+ *
+ * The iterator provided will be told which index to increment, or reset if a dimension is overflown. Returns true if
+ * the increment was successful, false if the end of the dimensions has been reached.
+ */
 template <ExpressionIterator_c E>
 bool increment_positions( // static to avoid having to use virtual functions
     std::vector<int>& positions,
     const std::vector<Dimension>& dimensions,
     const E& iterator // not really const, but we have to pretend to maintain the constness of the * operators
 ) {
-    /**
-     * Increments the positions vector in accordance with the dimensions vector. The iterator
-     * provided will be told which index to increment, or reset if a dimension is overflown. Returns
-     * true if the increment was successful, false if the end of the dimensions has been reached.
-     */
     for (size_t i=0; i<positions.size(); ++i) {
         // check if we're about to overflow the next index
         if (positions[i] + 1 == dimensions[i].index.size()) [[unlikely]] {
@@ -44,11 +45,12 @@ bool increment_positions( // static to avoid having to use virtual functions
     return false;
 }
 
+/**
+ * @brief Class to reduce code duplication in expression iterators
+ *
+ * Virtual functions have been omitted for performance.
+ */
 class ExpressionIteratorBase {
-    /** Class to reduce code duplication in expression iterators
-     *
-     * Virtual functions have been omitted for performance
-     */
 public:
     using iterator_category = std::forward_iterator_tag;
     using difference_type   = std::ptrdiff_t;

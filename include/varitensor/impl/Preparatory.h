@@ -17,12 +17,11 @@ enum PreparatoryType {
     PRODUCT
 };
 
+/**
+ * @brief Allows expressions to set up for resolution whilst simultaneously  working out whether we
+ * can use a bulk algorithm.
+ */
 struct Preparatory {
-    /**
-     * Allows expressions to set up for resolution whilst simultaneously  working out whether we
-     * can use a bulk algorithm.
-     */
-
     ExprState state{SCALAR};
     Dimensions dimensions;
     Dimensions repeated; // minor pollution from ProductOpIterator, but unlikely to affect performance

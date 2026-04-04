@@ -33,6 +33,12 @@ class Tensor;
 class View;
 class Index;
 
+/**
+ * @brief Represents a logic error in the requested tensor operations
+ *
+ * This normally means a caller requested an operation that doesn't make sense mathematically, like trying to transpose
+ * two indices of different sizes.
+ */
 struct TensorLogicError final: std::logic_error {
     explicit TensorLogicError(const std::string& message):
         std::logic_error("<Vari-Tensor> Tensor logic error: " + message)
@@ -84,20 +90,43 @@ using DoublePtr = std::unique_ptr<double, void(*)(double*)>;
 
 } // namespace impl
 
+/**
+ * @brief Helper alias to provide the correct signature for user-defined metric functions
+ */
 using MetricFunction = std::function<double(int, int)>;
 
-// for nice initialisation of indices with standard sizes
+/**
+ * @brief Convenience aliases for setting index size
+ */
 enum IndexSizes {LATIN = 3, GREEK = 4};
+
+/**
+ * @brief Aliases used to express index variance
+ */
 enum Variance {COVARIANT = 0, LOWER = 0, CONTRAVARIANT = 1, UPPER = 1};
 
+/**
+ * @brief Expresses an interval on an index
+ *
+ * Both first and last are included in the range of the interval.
+ */
 struct Interval {
     const Index& origin;
     const int first;
     const int last;
 };
 
+/**
+ * @brief Represents an index of a tensor
+ */
 class Index {
 public:
+/**
+ * @brief Initialise an index
+ *
+ * @param size Index size; must be greater than 1.
+ */
+///@{
     explicit Index(const int size):
         m_size{size},
         m_id{s_next_id++}
@@ -112,7 +141,11 @@ public:
     {
         impl::deny(m_size < 2, "Cannot initialize index with size < 2");
     }
+///@}
 
+/**
+ * @brief Create a new index from an interval
+ */
     Index(const Interval& interval): // NOLINT - we want implicit conversion
         m_size{interval.last - interval.first + 1},
         m_id{interval.origin.m_id},
@@ -120,6 +153,11 @@ public:
         m_interval_start{interval.first}
     {}
 
+/**
+ * @brief Compare two indices
+ *
+ * Note that for indices the name is included in the comparison.
+ */
     bool operator==(const Index& other) const {
         if (m_name.empty()) return m_id == other.m_id && m_size == other.m_size;
         return m_name == other.m_name && m_size == other.m_size;
@@ -144,6 +182,15 @@ public:
 
     void set_name(const std::string& name) { m_name = name; }
 
+/**
+ * @brief Use when slicing a tensor to select an interval of an index
+ *
+ * e.g. T[ index(1) ] will get a slice ignoring the 0th elements of T.
+ *
+ * @param first The first value to include; must be greater than 0.
+ * @param last The last index to include; takes the maximum index value by default.
+ */
+    ///@{
     [[nodiscard]] Interval operator()(const int first, const int last=impl::MAX_INTERVAL) const {
         return interval(first, last);
     }
@@ -156,6 +203,7 @@ public:
         impl::deny(last >= m_size, "Interval cannot overflow index size");
         return {*this, first, last};
     }
+///@}
 
 private:
     int m_size;
@@ -166,6 +214,11 @@ private:
     inline static int s_next_id{0};
 };
 
+/**
+ * @brief Represents an index with a variance
+ *
+ * Used when constructing tensors.
+ */
 struct VarianceQualifiedIndex {
     Index index;
     Variance variance = COVARIANT;
@@ -254,8 +307,13 @@ enum TensorClass {
     CHRISTOFFEL_SYMBOL
 };
 
+/**
+ * @brief Type aliases to help with indexing tensors
+ */
+///@{
 using Indexable = std::variant<int, Index>;
 using Indexables = std::vector<Indexable>;
+///@}
 
 void deallocate(double* data);
 DoublePtr allocate(size_t size);
@@ -507,24 +565,46 @@ private:
 
 } // namespace impl
 
+/**
+ * @brief Represents a view on a tensor using the provided indices
+ */
 class View {
 public:
+/**
+ * @brief Initialise a plain view on a tensor
+ */
     explicit View(const Tensor& target); // a plain view on a tensor
     View(const Tensor& target, double* data_ptr, impl::Dimensions dimensions); // an offset view
 
+/**
+ * @brief Assign a slice of a tensor to take the values from another tensor
+ */
     void operator=(const Tensor& other) &&; // NOLINT - allows T[i, 2] = U
+
+    template<typename T = void>
+    void operator=(const Tensor&) const & { // NOLINT - this definition only exists to document incorrect syntax
+        static_assert(!std::is_same_v<T, T>,
+            "View assignment is only valid on rvalue Views (e.g. tensor[i, j] = other). "
+            "Did you mean to assign to the underlying Tensor instead?");
+    }
 
     bool operator==(const View& other) const;
 
     using iterator = impl::ViewIterator<>;
     using const_iterator = impl::ViewIterator<true>;
 
+/**
+ * @brief Standard iterator and const iterator functions
+ */
+///@{
     [[nodiscard]] iterator begin();
     [[nodiscard]] iterator end();
     [[nodiscard]] const_iterator begin() const;
     [[nodiscard]] const_iterator end() const;
     [[nodiscard]] const_iterator cbegin() const;
     [[nodiscard]] const_iterator cend() const;
+///@}
+
     [[nodiscard]] impl::ExpressionIterator vbegin() const;
 
     [[nodiscard]] double* data() const;
@@ -539,8 +619,47 @@ private:
     impl::Dimensions m_dimensions;
 };
 
+/**
+ * @brief Represents a generalised mathematical tensor
+ *
+ * This class is capable of representing tensors of any rank, including scalars. It can also represent metric tensors
+ * when created via varitensor::metric_tensor().
+ *
+ * The dimensions of a tensor are always aware of their variance, though the user can ignore this, in which case the
+ * variance defaults to covariant.
+ */
 class Tensor {
 public:
+/**
+ * @brief Construct a tensor with a collection of indices
+ *
+ * Each constructor version can be called with a name, index information, and/or initial fill value (0 by default),
+ * with the only required field being the index information.
+ *
+ * The index information must be one of the following:
+ *  - A std::initializer_list of varitensor::VarianceQualifiedIndex
+ *        e.g. Tensor{ {index1, COVARIANT},  {index2, CONTRAVARIANT} }
+ *  - A std::initializer_list of varitensor::Index
+ *        e.g. Tensor{ index1, index2 }
+ *  - A vector of varitensor::VarianceQualifiedIndex
+ *        e.g. Tensor{ variance_qualified_index_vector }
+ *  - A vector of varitensor::Index
+ *        e.g. Tensor{ index_vector }
+ *
+ * The following example exercises the full functionality to create a two-dimensional tensor of ones called "T":
+ *
+ * @code{.cpp}
+ * auto tensor = Tensor{
+ *     "T",
+ *     {
+ *         {index1, COVARIANT},
+ *         {index2, CONTRAVARIANT}
+ *     },
+ *     1
+ * };
+ * @endcode
+ */
+///@{
     // std::initializer_list<VarianceQualifiedIndex>
     Tensor(std::initializer_list<VarianceQualifiedIndex> vq_indices);
     Tensor(std::initializer_list<VarianceQualifiedIndex> vq_indices, double initial_value);
@@ -564,10 +683,15 @@ public:
     Tensor(const std::vector<Index>& indices, double initial_value);
     Tensor(std::string name, const std::vector<Index>& indices);
     Tensor(std::string name, const std::vector<Index>& indices, double initial_value);
+///@}
 
-    // Scalar
+/**
+ * @brief Initialise a scalar
+ */
+///@{
     explicit Tensor(double initial_value);
     Tensor(std::string name, double initial_value);
+///@}
 
     template<typename E>
     requires impl::Expression_c<std::remove_cvref_t<E>> // "requires impl::Expression_c" to keep the forwarding reference
@@ -592,15 +716,40 @@ public:
     Tensor(Tensor&& other) noexcept;
     Tensor& operator=(Tensor&& other) noexcept;
 
+/**
+ * @brief Convert a scalar tensor to a double; throws if the tensor is not scalar.
+ */
     explicit operator double() const;
 
-    // short-circuit for scalar
+/**
+ * @brief Get a view on a slice of a tensor
+ *
+ * This function can generically slice a tensor with any combination of integers, Indices, and Intervals. Repeated
+ * indices are summed over, according to the Einstein summation convention.
+ *
+ * @return An iterable, Tensor-convertible View object representing the slice.
+ */
     template<impl::Indexable_c... Indices>
-    double& operator[](Indices...) requires (sizeof...(Indices) == 0) {
-        return *m_data;
+    requires (!impl::AllInt_c<Indices...>)
+    [[nodiscard]] View operator[](Indices... indices) const {
+        impl::deny(sizeof...(indices) != m_dimensions.size(),
+                        "Indexing dimension mismatch");
+
+        size_t n{0};
+        size_t offset{0};
+        impl::Dimensions passed_indices;
+        construct_passed_indices(n, offset, passed_indices, indices...);
+
+        return View{*this, m_data.get() + offset, passed_indices};
     }
 
-    // short-circuit for all int indices
+/**
+ * @brief Get a reference to a value in a tensor
+ *
+ * Special case of operator[] where all indices must be int.
+ *
+ * @return double& to a single value in the tensor.
+ */
     template<impl::Indexable_c... Indices>
     requires (impl::AllInt_c<Indices...> && sizeof...(Indices) > 0)
     double& operator[](Indices... indices) {
@@ -619,22 +768,21 @@ public:
         return *data;
     }
 
+/**
+ * @overload double& operator[](Indices... indices)
+ */
     template<impl::Indexable_c... Indices>
-    requires (!impl::AllInt_c<Indices...>)
-    [[nodiscard]] View operator[](Indices... indices) const {
-        impl::deny(sizeof...(indices) != m_dimensions.size(),
-                        "Indexing dimension mismatch");
-
-        size_t n{0};
-        size_t offset{0};
-        impl::Dimensions passed_indices;
-        construct_passed_indices(n, offset, passed_indices, indices...);
-
-        return View{*this, m_data.get() + offset, passed_indices};
+    double& operator[](Indices...) requires (sizeof...(Indices) == 0) {
+        return *m_data;
     }
 
+/**
+ * @brief Index a view with a vector of indexables
+ */
+///@{
     View operator[](impl::Indexables indices) const;
     double& operator[](const std::vector<int>& indices) const;
+///@}
 
     [[nodiscard]] std::string name() const;
     [[nodiscard]] size_t size() const;
@@ -651,6 +799,9 @@ public:
     [[nodiscard]] Variance variance(const Index& index) const;
     [[nodiscard]] Variance variance(int index) const;
 
+/**
+ * @brief Outputs a comma-separated dump of every value in the tensor
+ */
     template<typename S>
     requires requires(S stream) {
         stream << std::string{""};
@@ -667,20 +818,60 @@ public:
         return ostream;
     }
 
+/**
+ * @brief Print the values of a tensor
+ *
+ * The tensor's values are displayed in a geometrically intuitive fashion up to rank 4. For higher rank tensors, the
+ * values are just dumped as a list.
+ */
     friend void write_data(std::ostream& stream, const Tensor& tensor);
+
+/**
+ * @brief Print a summary display of a tensor including name and indices
+ *
+ * Name and indices are displayed as a large title with the indices placed according to variance. The tensor's values
+ * are displayed in a geometrically intuitive fashion up to rank 4. For higher rank tensors, the values are just dumped
+ * as a list.
+ */
     friend std::ostream& pretty_print(std::ostream& ostream, const Tensor& tensor);
 
+/**
+ * @brief Get the tensor's internal name (default to "Vari-Tensor")
+ */
     Tensor& set_name(const std::string& name);
+    /**
+ * @brief Mathematically swap two indices and transpose the associated elements in memory
+ */
     Tensor& transpose(const Index& first, const Index& second);
+/**
+ * @brief Replace one index with another
+ */
     Tensor& relabel(const Index& old_index, const Index& new_index);
+/**
+ * @brief Directly set the variance of an index
+ *
+ * Does not manipulate the values of the tensor - for a true mathematical variance change, a tensor must be contracted
+ * by multiplying with a metric tensor obtained from varitensor::metric_tensor(...).
+ */
     Tensor& set_variance(const Index& index, Variance variance);
+/**
+ * @brief Alias for set_variance() with CONTRAVARIANT
+ */
     Tensor& raise(const Index& index);
+/**
+ * @brief Alias for set_variance() with COVARIANT
+ */
     Tensor& lower(const Index& index);
 
+/**
+ * @brief Standard iterator and const iterator functions
+ */
+///@{
     [[nodiscard]] View::iterator begin() const;
     [[nodiscard]] View::iterator end() const;
     [[nodiscard]] View::const_iterator cbegin() const;
     [[nodiscard]] View::const_iterator cend() const;
+///@}
 
     impl::ProductOp operator-() const;
 
@@ -740,9 +931,16 @@ public:
         return first;
     }
 
+/**
+ * @brief Check for equality
+ *
+ * Note that for tensor-tensor the comparison ignores name and whether or not the tensor is a metric tensor.
+ */
+///@{
     friend bool operator==(const Tensor& first, const Tensor& second);
     friend bool operator==(const Tensor& first, const double& second);
     friend bool operator==(const double& first, const Tensor& second);
+///@}
 
 private:
     friend class View;
@@ -944,10 +1142,6 @@ inline void deallocate(double* data) {
 }
 
 inline DoublePtr allocate(const size_t size) {
-    /**
-     * To make SIMD operations more efficient, we allocate aligned memory and pad
-     * all tensors to be multiples of the packing size.
-     */
     const size_t remainder = size % REG_WIDTH_256;
     const size_t padded_size = remainder ? size - remainder + REG_WIDTH_256 : size;
 
@@ -1133,6 +1327,12 @@ struct VariTensorInternalError final: std::logic_error {
     {}
 };
 
+/**
+ * @brief Increments the positions vector in accordance with the dimensions vector
+ *
+ * The iterator provided will be told which index to increment, or reset if a dimension is overflown. Returns true if
+ * the increment was successful, false if the end of the dimensions has been reached.
+ */
 template <ExpressionIterator_c E>
 bool increment_positions( // static to avoid having to use virtual functions
     std::vector<int>& positions,
@@ -1329,10 +1529,29 @@ private:
 
 } // namespace impl
 
+/**
+ * @brief Basic Euclidean metric function, used as the default for metric_tensor(...)
+ */
 const MetricFunction EUCLIDEAN_METRIC = [](const int i, const int j) {
     return i == j ? 1 : 0;
 };
 
+/**
+ * @brief Creates a metric tensor that can be used to raise and lower indices
+ *
+ * Metric tensors function like normal tensors, but when used in einstein summation, their non-summed index positionally
+ * replaces the summed one in the new tensor. This is commonly used in differential geometry to raise and lower indices.
+ *
+ * e.g. B_i_j * g^i^k = B^k_j
+ *
+ * This tensor will always use a lowercase g symbol when pretty printing.
+ *
+ * @param indices The indices with which to initialise the metric. There must be two indices, both of the same length.
+ *
+ * @param metric_function A user-defined function to populate the metric. The function must accept two ints giving
+ * the position in the metric and return a double giving the value; varitensor::MetricFunction is provided as a
+ * helper alias.
+ */
 inline Tensor metric_tensor(
     const std::initializer_list<VarianceQualifiedIndex> indices,
     const MetricFunction& metric_function = EUCLIDEAN_METRIC
@@ -1357,6 +1576,15 @@ inline Tensor metric_tensor(
     return metric;
 }
 
+/**
+ * @brief Creates an n-dimensional Levi-Civita symbol
+ *
+ * This tensor will always use an epsilon symbol when pretty-printing.
+ *
+ * @param indices The indices with which to initialise the symbol. There must be at least 2 indices, and they must all
+ * be the same length.
+ */
+///@{
 inline Tensor levi_civita_symbol(const std::initializer_list<Index> indices) {
     std::vector<VarianceQualifiedIndex> vq_indices;
     for (const auto& index: indices) vq_indices.emplace_back(index, COVARIANT);
@@ -1376,7 +1604,17 @@ inline Tensor antisymmetric_symbol(const std::initializer_list<Index> indices) {
 inline Tensor antisymmetric_symbol(const std::initializer_list<VarianceQualifiedIndex> indices) {
     return Tensor::make_levi_civita_symbol(indices);
 }
+///@}
 
+/**
+ * @brief Creates an n-dimensional Kronecker delta
+ *
+ * This tensor will always use an delta symbol when pretty-printing.
+ *
+ * @param indices The indices with which to initialise the delta. There must be at least 2 indices, and they must all
+ * be the same length.
+ */
+///@{
 inline Tensor kronecker_delta(const std::initializer_list<Index> indices) {
     std::vector<VarianceQualifiedIndex> vq_indices;
     for (const auto& index: indices) vq_indices.emplace_back(index, COVARIANT);
@@ -1386,6 +1624,7 @@ inline Tensor kronecker_delta(const std::initializer_list<Index> indices) {
 inline Tensor kronecker_delta(const std::initializer_list<VarianceQualifiedIndex> indices) {
     return Tensor::make_kronecker_delta(indices);
 }
+///@}
 
 // =================================================================================================
 //                                                                                Preparatory impl |
@@ -2448,7 +2687,6 @@ inline Tensor& operator/=(Tensor& first, const double& second) {
 }
 
 inline bool operator==(const Tensor& first, const Tensor& second) {
-    // this operator ignores the name and tensor_class attributes
     try {
         for (const auto& value: Tensor{first - second}) {
             if (value != 0) return false; // indices MUST be linked when comparing
@@ -3208,11 +3446,19 @@ inline void output_234(const Tensor& tensor, const Dimensions& dimensions, std::
 
 } // namespace impl
 
+/**
+ * @brief Set the width of the fields when geometric pretty-printing
+ *
+ * Any values on the tensor longer than this width will be truncated with a ~ symbol.
+ */
 inline void set_print_data_width(const int width) {
     // sets the width of the data elements when pretty printing
     impl::print_data_width = width;
 }
 
+/**
+ * @brief Set the number of significant figures to round values to when pretty-printing
+ */
 inline void set_print_precision(const int precision) {
     // set the precision of the output stream when pretty printing
     impl::print_data_precision = precision;

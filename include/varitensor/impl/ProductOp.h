@@ -49,13 +49,13 @@ private:
     bool m_end{false};
 };
 
-class ProductOp {
 /**
- * Represents an operation between tensor expressions where repeated indices are summed over
+ * @brief Represents an operation between tensor expressions where repeated indices are summed over
  * (einstein summation convention). Supports multiplication and division (though division by
  * non-scalar tensor is not allowed). Will also correctly swap in indices when summing over
  * metric tensors.
  */
+class ProductOp {
 public:
     template <ExpressionOperand_c OperandType1, ExpressionOperand_c OperandType2>
     ProductOp(const OperandType1& first, const OperandType2& second, Operation operation)

@@ -26,10 +26,9 @@ void deallocate(double* data) {
 }
 
 DoublePtr allocate(const size_t size) {
-    /**
-     * To make SIMD operations more efficient, we allocate aligned memory and pad
-     * all tensors to be multiples of the packing size.
-     */
+    // To make SIMD operations more efficient, we allocate aligned memory and pad all tensors to be
+    // multiples of the packing size.
+
     const size_t remainder = size % REG_WIDTH_256;
     const size_t padded_size = remainder ? size - remainder + REG_WIDTH_256 : size;
 
@@ -59,9 +58,8 @@ void copy(double* data1, const double* data2, const size_t size) {
 }
 
 void broadcast_vec(const double* data1, double* data2, const size_t size1, const size_t size2) {
-    /* Whilst there is no data in the target, it's hard to play any tricks here, so just do it the
-     * easy way.
-     */
+    // Whilst there is no data in the target, it's hard to play any tricks here, so just do it the
+    // easy way.
 
     size_t j_start{0};
     for (int i=0; i < static_cast<int>(size1 - REG_WIDTH_256 + 1); i += REG_WIDTH_256) {
@@ -82,9 +80,9 @@ void broadcast_vec(const double* data1, double* data2, const size_t size1, const
 }
 
 void broadcast_chunks(const double* data1, double* data2, const size_t size1, const size_t interval) {
-    /* For this function, there will generally already be data in the target Tensor. Therefore, we
-     * can't play any tricks with the memory padding as this would overwrite meaningful data.
-     */
+    // For this function, there will generally already be data in the target Tensor. Therefore, we
+    // can't play any tricks with the memory padding as this would overwrite meaningful data.
+
     double* running_ptr = data2;
     for (size_t i=0; i < size1; ++i) {
         const __m256d values = _mm256_set1_pd(data1[i]);

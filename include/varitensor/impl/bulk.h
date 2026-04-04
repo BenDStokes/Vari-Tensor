@@ -20,16 +20,24 @@ DoublePtr allocate_copy(const double* data, size_t size);
 
 void copy(double* data1, const double* data2, size_t size);
 
-/* Broadcast data1 along the length of data2, e.g. 123 with size 9 data2 gives 123 123 123 */
+/**
+ * @brief Broadcast data1 along the length of data2, e.g. 123 with size 9 data2 gives 123 123 123
+ */
 void broadcast_vec(const double* data1, double* data2, size_t size1, size_t size2);
 
-/* Broadcast each element of data1 as "chunks" into data2, e.g. 123 with size 9 data2 gives 111 222 333 */
+/**
+ * @brief Broadcast each element of data1 as "chunks" into data2, e.g. 123 with size 9 data2 gives 111 222 333
+ */
 void broadcast_chunks(const double* data1, double* data2, size_t size1, size_t interval);
 
-/* Multiply every element of data by value */
+/**
+ * @brief Multiply every element of data by value
+ */
 void broadcast(double value, double* data, size_t size);
 
-/* data3[i] = operation(data1[i], data2[i]) */
+/**
+ * @brief data3[i] = operation(data1[i], data2[i])
+ */
 void piecewise(const double* data1, const double* data2,  double* data3, size_t size, Operation operation);
 
 } // namespace varitensor::impl

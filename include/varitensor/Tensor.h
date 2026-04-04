@@ -53,16 +53,59 @@ enum TensorClass {
 
 } // namespace impl
 
+/**
+ * @brief Type aliases to help with indexing tensors
+ */
+///@{
 using Indexable = std::variant<int, Index>;
 using Indexables = std::vector<Indexable>;
+///@}
 
+/**
+ * @brief Represents a generalised mathematical tensor
+ *
+ * This class is capable of representing tensors of any rank, including scalars. It can also represent metric tensors
+ * when created via varitensor::metric_tensor().
+ *
+ * The dimensions of a tensor are always aware of their variance, though the user can ignore this, in which case the
+ * variance defaults to covariant.
+ */
 class Tensor {
 public:
 // =================================================================================================
 //                                                                                         c/dtors |
 // =================================================================================================
-    // General use ctors; each has 4 versions: unaccompanied, w/ initial value, w/ name, and w/ name and initial value
 
+/**
+ * @brief Construct a tensor with a collection of indices
+ *
+ * Each constructor version can be called with a name, index information, and/or initial fill value (0 by default),
+ * with the only required field being the index information.
+ *
+ * The index information must be one of the following:
+ *  - A std::initializer_list of varitensor::VarianceQualifiedIndex
+ *        e.g. Tensor{ {index1, COVARIANT},  {index2, CONTRAVARIANT} }
+ *  - A std::initializer_list of varitensor::Index
+ *        e.g. Tensor{ index1, index2 }
+ *  - A vector of varitensor::VarianceQualifiedIndex
+ *        e.g. Tensor{ variance_qualified_index_vector }
+ *  - A vector of varitensor::Index
+ *        e.g. Tensor{ index_vector }
+ *
+ * The following example exercises the full functionality to create a two-dimensional tensor of ones called "T":
+ *
+ * @code{.cpp}
+ * auto tensor = Tensor{
+ *     "T",
+ *     {
+ *         {index1, COVARIANT},
+ *         {index2, CONTRAVARIANT}
+ *     },
+ *     1
+ * };
+ * @endcode
+ */
+///@{
     // std::initializer_list<VarianceQualifiedIndex>
     Tensor(std::initializer_list<VarianceQualifiedIndex> vq_indices);
     Tensor(std::initializer_list<VarianceQualifiedIndex> vq_indices, double initial_value);
@@ -86,12 +129,17 @@ public:
     Tensor(const std::vector<Index>& indices, double initial_value);
     Tensor(std::string name, const std::vector<Index>& indices);
     Tensor(std::string name, const std::vector<Index>& indices, double initial_value);
+///@}
 
 // -------------------------------------------------------------------------------------------------
 
-    // Scalar
+/**
+ * @brief Initialise a scalar
+ */
+///@{
     explicit Tensor(double initial_value);
     Tensor(std::string name, double initial_value);
+///@}
 
     template<typename E>
     requires impl::Expression_c<std::remove_cvref_t<E>> // "requires impl::Expression_c" to keep the forwarding reference
@@ -124,19 +172,52 @@ public:
 //                                                                                      Conversion |
 // =================================================================================================
 
+/**
+ * @brief Convert a scalar tensor to a double; throws if the tensor is not scalar.
+ */
     explicit operator double() const;
 
 // =================================================================================================
 //                                                                                        Indexing |
 // =================================================================================================
 
-    // short-circuit for scalar
+/**
+ * @brief Get a view on a slice of a tensor
+ *
+ * This function can generically slice a tensor with any combination of integers, Indices, and Intervals. Repeated
+ * indices are summed over, according to the Einstein summation convention.
+ *
+ * @return An iterable, Tensor-convertible View object representing the slice.
+ */
     template<impl::Indexable_c... Indices>
-    double& operator[](Indices...) requires (sizeof...(Indices) == 0) {
-        return *m_data;
+    requires (!impl::AllInt_c<Indices...>)
+    [[nodiscard]] View operator[](Indices... indices) const {
+        impl::deny(sizeof...(indices) != m_dimensions.size(),
+                        "Indexing dimension mismatch");
+
+        size_t n{0};
+        size_t offset{0};
+        impl::Dimensions passed_indices;
+        construct_passed_indices(n, offset, passed_indices, indices...);
+
+        return View{*this, m_data.get() + offset, passed_indices};
     }
 
-    // short-circuit for all int indices
+/**
+ * @brief Index a view with a vector of indexables
+ */
+///@{
+    View operator[](Indexables indices) const;
+    double& operator[](const std::vector<int>& indices) const;
+///@}
+
+/**
+ * @brief Get a reference to a value in a tensor
+ *
+ * Special case of operator[] where all indices must be int.
+ *
+ * @return double& to a single value in the tensor.
+ */
     template<impl::Indexable_c... Indices>
     requires (impl::AllInt_c<Indices...> && sizeof...(Indices) > 0)
     double& operator[](Indices... indices) {
@@ -155,22 +236,13 @@ public:
         return *data;
     }
 
+/**
+ * @overload double& operator[](Indices... indices)
+ */
     template<impl::Indexable_c... Indices>
-    requires (!impl::AllInt_c<Indices...>)
-    [[nodiscard]] View operator[](Indices... indices) const {
-        impl::deny(sizeof...(indices) != m_dimensions.size(),
-                        "Indexing dimension mismatch");
-
-        size_t n{0};
-        size_t offset{0};
-        impl::Dimensions passed_indices;
-        construct_passed_indices(n, offset, passed_indices, indices...);
-
-        return View{*this, m_data.get() + offset, passed_indices};
+    double& operator[](Indices...) requires (sizeof...(Indices) == 0) {
+        return *m_data;
     }
-
-    View operator[](Indexables indices) const;
-    double& operator[](const std::vector<int>& indices) const;
 
     // =================================================================================================
     //                                                                                     information |
@@ -193,12 +265,14 @@ public:
 
     // ---------------------------------------------------------------------------------------- printing
 
+/**
+ * @brief Outputs a comma-separated dump of every value in the tensor
+ */
     template<typename S>
     requires requires(S stream) {
         stream << std::string{""};
     }
     std::ostream& dump(S& ostream) const {
-        // outputs a comma-separated dump of every value in the tensor
         const double* data = m_data.get();
         ostream << std::to_string(*data);
         for(size_t i=1; i<m_size; ++i) {
@@ -209,28 +283,68 @@ public:
         return ostream;
     }
 
+/**
+ * @brief Print the values of a tensor
+ *
+ * The tensor's values are displayed in a geometrically intuitive fashion up to rank 4. For higher rank tensors, the
+ * values are just dumped as a list.
+ */
     friend void write_data(std::ostream& stream, const Tensor& tensor);
+
+/**
+ * @brief Print a summary display of a tensor including name and indices
+ *
+ * Name and indices are displayed as a large title with the indices placed according to variance. The tensor's values
+ * are displayed in a geometrically intuitive fashion up to rank 4. For higher rank tensors, the values are just dumped
+ * as a list.
+ */
     friend std::ostream& pretty_print(std::ostream& ostream, const Tensor& tensor);
 
 // =================================================================================================
 //                                                                                    manipulation |
 // =================================================================================================
 
+/**
+ * @brief Get the tensor's internal name (default to "Vari-Tensor")
+ */
     Tensor& set_name(const std::string& name);
+/**
+ * @brief Mathematically swap two indices and transpose the associated elements in memory
+ */
     Tensor& transpose(const Index& first, const Index& second);
+/**
+ * @brief Replace one index with another
+ */
     Tensor& relabel(const Index& old_index, const Index& new_index);
+/**
+ * @brief Directly set the variance of an index
+ *
+ * Does not manipulate the values of the tensor - for a true mathematical variance change, a tensor must be contracted
+ * by multiplying with a metric tensor obtained from varitensor::metric_tensor(...).
+ */
     Tensor& set_variance(const Index& index, Variance variance);
+/**
+ * @brief Alias for set_variance() with CONTRAVARIANT
+ */
     Tensor& raise(const Index& index);
+/**
+ * @brief Alias for set_variance() with COVARIANT
+ */
     Tensor& lower(const Index& index);
 
 // =================================================================================================
 //                                                                                       iteration |
 // =================================================================================================
 
+/**
+ * @brief Standard iterator and const iterator functions
+ */
+///@{
     [[nodiscard]] View::iterator begin() const;
     [[nodiscard]] View::iterator end() const;
     [[nodiscard]] View::const_iterator cbegin() const;
     [[nodiscard]] View::const_iterator cend() const;
+///@}
 
 // =================================================================================================
 //                                                                                      arithmetic |
@@ -314,9 +428,16 @@ public:
 //                                                                                           logic |
 // =================================================================================================
 
+/**
+ * @brief Check for equality
+ *
+ * Note that for tensor-tensor the comparison ignores name and whether or not the tensor is a metric tensor.
+ */
+///@{
     friend bool operator==(const Tensor& first, const Tensor& second);
     friend bool operator==(const Tensor& first, const double& second);
     friend bool operator==(const double& first, const Tensor& second);
+///@}
 
 private:
 // =================================================================================================

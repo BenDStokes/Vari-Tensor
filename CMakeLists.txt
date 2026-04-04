@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 project(VariTensor
   VERSION 1.1.0
   LANGUAGES CXX
-  DESCRIPTION "Ergonomic tensors with variance."
+  DESCRIPTION "Vari-Tensor is a library for for ergonomic tensor algebra, including index variance."
 )
 
 add_library(varitensor

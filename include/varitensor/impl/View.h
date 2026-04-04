@@ -181,29 +181,47 @@ private:
 } // namespace impl
 
 
-
-class View {
 /**
- * Represents a view on a tensor using provided indices. Repeated indices
- * are summed over (contraction). Can be used as a forwards iterator.
+ * @brief Represents a view on a tensor using the provided indices
  */
+class View {
 public:
-    explicit View(const Tensor& target); // a plain view on a tensor
+/**
+ * @brief Initialise a plain view on a tensor
+ */
+    explicit View(const Tensor& target);
+
     View(const Tensor& target, double* data_ptr, impl::Dimensions dimensions); // an offset view
 
+/**
+ * @brief Assign a slice of a tensor to take the values from another tensor
+ */
     void operator=(const Tensor& other) &&; // NOLINT - allows T[i, 2] = U
+
+    template<typename T = void>
+    void operator=(const Tensor&) const & { // NOLINT - this definition only exists to document incorrect syntax
+        static_assert(!std::is_same_v<T, T>,
+            "View assignment is only valid on rvalue Views (e.g. tensor[i, j] = other). "
+            "Did you mean to assign to the underlying Tensor instead?");
+    }
 
     bool operator==(const View& other) const;
 
     using iterator = impl::ViewIterator<>;
     using const_iterator = impl::ViewIterator<true>;
 
+/**
+ * @brief Standard iterator and const iterator functions
+ */
+///@{
     [[nodiscard]] iterator begin();
     [[nodiscard]] iterator end();
     [[nodiscard]] const_iterator begin() const;
     [[nodiscard]] const_iterator end() const;
     [[nodiscard]] const_iterator cbegin() const;
     [[nodiscard]] const_iterator cend() const;
+///@}
+
     [[nodiscard]] impl::ExpressionIterator vbegin() const;
 
     [[nodiscard]] double* data() const;

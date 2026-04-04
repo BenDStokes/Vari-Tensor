@@ -13,7 +13,16 @@
 
 namespace varitensor {
 
+/**
+ * @brief Set the width of the fields when geometric pretty-printing
+ *
+ * Any values on the tensor longer than this width will be truncated with a ~ symbol.
+ */
 void set_print_data_width(int width);
+
+/**
+ * @brief Set the number of significant figures to round values to when pretty-printing
+ */
 void set_print_precision(int precision);
 
 } // namespace varitensor

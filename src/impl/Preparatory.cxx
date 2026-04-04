@@ -15,10 +15,10 @@ namespace varitensor::impl {
 
 namespace {
 
+/**
+ * @brief Helper struct used to track repeated indices and metric counterparts.
+ */
 struct Couple {
-    /**
-     * Helper struct used to track repeated indices and metric counterparts.
-     */
     int dims[2]{-1, -1};
     int metric_index{-1};
     int other_index{-1};

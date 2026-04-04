@@ -75,7 +75,7 @@ void ProductOpIterator::reset(const int index_id) const {
 }
 
 double ProductOpIterator::deref() const {
-    /* Despite modifying m_repeated_positions, this function is const as it always returns the positions to 0 */
+    // NB: Despite modifying m_repeated_positions, this function is const as it always returns the positions to 0
     double sum = 0;
 
     do {

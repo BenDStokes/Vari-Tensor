@@ -15,6 +15,12 @@
 
 namespace varitensor {
 
+/**
+ * @brief Represents a logic error in the requested tensor operations
+ *
+ * This normally means a caller requested an operation that doesn't make sense mathematically, like trying to transpose
+ * two indices of different sizes.
+ */
 struct TensorLogicError final: std::logic_error {
     explicit TensorLogicError(const std::string& message):
         std::logic_error("<Vari-Tensor> Tensor logic error: " + message)
