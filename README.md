@@ -38,6 +38,10 @@ The sources can be downloaded from this repository and are ready to be built as-
 additional configuration. Vari-Tensor has **no dependencies** and can easily be built with
 CMake either directly or via FetchContent.
 
+### Conan
+
+Vari-Tensor can be built with Conan via the provided conanfile.
+
 ## :arrow_forward: Usage
 
 ### Basic Functionality
