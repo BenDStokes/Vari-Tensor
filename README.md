@@ -237,7 +237,8 @@ interface.
 > performance, these checks can be toggled off at compile time by setting
 > `VARITENSOR_VALIDATION_ON` to 0.
 
-> :information_source: **Note:** Compile with the `-mavx` flag to further optimise some common operations.
+> :information_source: **Note:** Compile with the `-mavx` flag to further optimise some common operations. The cmake
+> option VARITENSOR_ENABLE_AVX can also be set to enable this.
 
 ## :scroll: License
 

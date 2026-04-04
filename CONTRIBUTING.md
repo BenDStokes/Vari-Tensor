@@ -14,7 +14,12 @@ Keep all discussions civil and respectful!
 ## Getting Started
 
 Once you've cloned the repo, load the CMakeLists.txt into your IDE, and you should be able to
-run the tests via the sole target "run_tests".
+run the various test targets:
+
+ - varitensor_tests
+ - varitensor_tests_avx
+ - varitensor_tests_validation_off
+ - varitensor_test_avx_validation_off
 
 ## Code Style
 
