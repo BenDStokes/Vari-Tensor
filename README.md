@@ -29,8 +29,8 @@ Older versions may work, but C++23 is required.
 
 ### Header-Only
 
-Vari-Tensor includes a header-only distribution. If you want to start using Vari-Tensor
-with minimal setup, you can simply place `varitensor.h` in your project and include it.
+Vari-Tensor includes a header-only distribution. If you want to start using it with minimal
+setup, you can simply place `varitensor.h` in your project and include it.
 
 ### Source Download
 
@@ -40,7 +40,7 @@ CMake either directly or via FetchContent.
 
 ### Conan
 
-Vari-Tensor can be built with Conan via the provided conanfile.
+You can also build with Conan via the provided conanfile.
 
 ## :arrow_forward: Usage
 
@@ -53,7 +53,7 @@ Vari-Tensor can be built with Conan via the provided conanfile.
 using namespace varitensor;
 
 int main() {
-    // VatiTensor uses Index objects to define tensors and understand their operations
+    // Vari-Tensor uses Index objects to define tensors and understand their operations
     Index mu{GREEK}, nu{5};
 
     // Tensors can be constructed from any number of indices
@@ -76,7 +76,9 @@ int main() {
 
 > :warning: **CAUTION**
 > 
-> It is generally recommended to not use auto when assigning tensor expressions, as the complier will deduce the type as one of the library's proxy objects and delay resolving of the expression. A common exception to this is keeping a view from an indexing operation.
+> Excersise caution when using `auto` for expression assignment, as the complier
+> will deduce the type as one of the library's proxy objects and delay resolving of the expression.
+> A common exception to this is keeping a view from an indexing operation.
 > ```c++
 > Tensor T = U + V; // Prefered
 > auto T = U + V; // Delays evaluation until T is converted to varitensor::Tensor
@@ -96,7 +98,7 @@ int main() {
     // Named indices of the same size always compare equal and keep their names when printing
     Index i{"i", LATIN}, j{"j", LATIN}, k{"k", LATIN};
 
-    // Vari-Tensor supports a wide range of punctuation, e.g. '
+    // Pretty printing supports a wide range of punctuation, e.g. '
     Tensor T_primed{"T'", {
             {i, CONTRAVARIANT},
             {j, CONTRAVARIANT},
@@ -239,10 +241,10 @@ interface.
 > :information_source: **Note:** By default, Vari-Tensor validates all tensor operations
 > at runtime and throws if any of them are mathematically ill-formed. For increased
 > performance, these checks can be toggled off at compile time by setting
-> `VARITENSOR_VALIDATION_ON` to 0.
+> `VARITENSOR_VALIDATION_ON` to `0`.
 
 > :information_source: **Note:** Compile with the `-mavx` flag to further optimise some common operations. The cmake
-> option VARITENSOR_ENABLE_AVX can also be set to enable this.
+> option `VARITENSOR_ENABLE_AVX` can also be set to enable this.
 
 ## :scroll: License
 
